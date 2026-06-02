@@ -78,11 +78,11 @@ class TugumiConfig:
     
     # LLM推論パラメータ
     MAX_TOKENS = 2048
-    TEMPERATURE = 0.7
+    TEMPERATURE = 0.2
     TOP_P = 0.9
     
     # ウェブスクレイピング設定
-    WEB_TIMEOUT = 30
+    WEB_TIMEOUT = 300
     MAX_RETRIES = 3
     DEFAULT_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
 
