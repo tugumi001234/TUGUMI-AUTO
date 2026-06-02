@@ -78,7 +78,7 @@ def example_2_create_web_scraper_tool():
             import re
             
             url = kwargs.get('url', args[0] if args else 'https://example.com')
-            timeout = kwargs.get('timeout', 10)
+            timeout = kwargs.get('timeout', 300)
             
             try:
                 response = requests.get(url, timeout=timeout)
