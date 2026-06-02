@@ -10,11 +10,14 @@ TUGUMIは、Androidデバイス上のTermuxを使用して、**llama.cpp**のロ
 
 - ✅ **完全自律実行**: エラーでユーザー入力待ちになることはなく、自ら思考・調査・実行
 - ✅ **長考型LLM対応**: 推論が長いモデルに対応したタイムアウト対策とアライブモニタリング
+- ✅ **Webスクレイピング機能**: URLからコンテンツを取得・要約してテキストで保存
+- ✅ **Android対応**: `/storage/emulated/0/AgentDesk`に自動保存
 - ✅ **動的拡張性**: ツール・ライブラリを自由に追加可能
 - ✅ **自己学習・自己修正**: 失敗から学び、アプローチを修正可能
 - ✅ **包括的なログ**: すべてのアクションを記録し、メモリに保存
 - ✅ **マルチツール対応**: 
   - DuckDuckGoでのウェブ検索
+  - Webスクレイピング＆要約
   - Subprocessによる外部コマンド実行
   - Pip経由のライブラリ自動インストール
   - カスタムツール動的生成
@@ -30,42 +33,48 @@ TUGUMIは、Androidデバイス上のTermuxを使用して、**llama.cpp**のロ
 ### ソフトウェア
 - Python 3.8+
 - llama.cpp (サーバーモード)
+- Git
 
 ### 必須ライブラリ
+自動インストールされます（以下のコマンドで手動インストール可能）
 ```bash
 pip install -r requirements.txt
 ```
 
 ---
 
-## 🚀 セットアップ
+## 🚀 クイックスタート
 
-### 1. Termuxのセットアップ
+### 1. リポジトリのクローン
 
 ```bash
-# パッケージ更新
+# Termuxで実行
+cd ~
+git clone https://github.com/tugumi001234/TUGUMI-AUTO.git
+cd TUGUMI-AUTO
+```
+
+### 2. 依存関係のインストール
+
+```bash
+# パッケージマネージャーの更新
 apt update && apt upgrade -y
 
 # Pythonと必要ツールをインストール
 apt install -y python python-pip git
 
-# リポジトリをクローン
-git clone https://github.com/tugumi001234/TUGUMI-AUTO.git
-cd TUGUMI-AUTO
-
-# 依存関係をインストール
+# Pythonの依存パッケージをインストール
 pip install -r requirements.txt
 ```
 
-### 2. llama.cpp サーバーの起動
+### 3. llama.cpp サーバーの起動
 
-別のTermuxセッションで:
+別のTermuxセッション（またはターミナル）で：
 
 ```bash
 # llama.cppをダウンロード（初回のみ）
 # https://github.com/ggerganov/llama.cpp からバイナリを入手
-
-# または、ビルド
+# または以下でビルド
 git clone https://github.com/ggerganov/llama.cpp
 cd llama.cpp
 make
@@ -77,9 +86,12 @@ make
 ./llama-server -m ~/models/model.gguf -c 2048 --port 8080 -ngl 99
 ```
 
-### 3. TUGUMIを起動
+### 4. TUGUMIエージェントを起動
+
+元のTermuxセッションで：
 
 ```bash
+cd ~/TUGUMI-AUTO
 python tugumi_agent.py
 ```
 
@@ -93,10 +105,12 @@ TUGUMIが起動すると、以下のコマンドが利用可能です:
 
 ```
 TUGUMI> task <タスク説明>     # タスクを実行
-TUGUMI> status               # 現在の状態を表示
-TUGUMI> logs                 # 最新ログを表示（直近10行）
-TUGUMI> history              # タスク履歴を表示（直近5件）
-TUGUMI> quit                 # TUGUMIを終了
+TUGUMI> scrape <URL>          # URLをスクレイピング＆要約
+TUGUMI> search <検索キーワード> # ウェブ検索
+TUGUMI> status                 # 現在の状態を表示
+TUGUMI> logs                   # 最新ログを表示（直近10行）
+TUGUMI> history                # タスク履歴を表示（直近5件）
+TUGUMI> quit                   # TUGUMIを終了
 ```
 
 ### 使用例
@@ -112,18 +126,25 @@ TUGUMI> task 最新のデータ処理ライブラリについて調べて、イ�
 2. 必要な情報を集約
 3. インストール方法を提示
 
-#### 例2: ファイル操作タスク
+#### 例2: Webスクレイピング
 
 ```
-TUGUMI> task ホームディレクトリのファイル一覧を取得し、テキストファイルの個数を数えてください
+TUGUMI> scrape https://example.com
 ```
 
 自動で以下を実行:
-1. ファイル一覧コマンドを実行
-2. テキストファイルをフィルタリング
-3. 結果をログに保存
+1. Webページを取得
+2. テキストを抽出
+3. 要約を生成
+4. `/storage/emulated/0/AgentDesk/SCRAPE_OUTPUT/` に保存
 
-#### 例3: 複合タスク
+#### 例3: ウェブ検索
+
+```
+TUGUMI> search Python 機械学習 ライブラリ
+```
+
+#### 例4: 複合タスク
 
 ```
 TUGUMI> task JSONファイルを解析して、特定のキーの値を抽出し、CSVファイルに変換してください
@@ -141,17 +162,28 @@ TUGUMI> task JSONファイルを解析して、特定のキーの値を抽出し
 
 ```
 TUGUMI-AUTO/
-├── tugumi_agent.py          # メインエージェント
+├── tugumi_agent.py          # メインエージェント（Webスクレイピング機能付き）
 ├── tugumi_tools.py          # ツール拡張システム
-├── requirements.txt          # 依存パッケージ
-├── README.md                 # このファイル
-└── SETUP_GUIDE.md           # セットアップガイド
+├── tugumi_examples.py       # 使用例とサンプル
+├── requirements.txt         # 依存パッケージ
+├── README.md                # このファイル
+└── SETUP_GUIDE.md          # セットアップガイド
 
-ホームディレクトリ:
-├── Documents/
-│   ├── TUGUMI_LOGS/         # 実行ログ（テキストファイル）
-│   ├── TUGUMI_MEMORY/       # 学習メモリ（JSON形式）
-│   └── TUGUMI_TOOLS/        # カスタムツール
+Android Termuxストレージ:
+/storage/emulated/0/AgentDesk/
+├── LOGS/                   # 実行ログ（テキストファイル）
+├── MEMORY/                 # 学習メモリ（JSON形式）
+├── TOOLS/                  # カスタムツール
+├── OUTPUT/                 # 処理結果
+└── SCRAPE_OUTPUT/          # スクレイピング結果
+
+ホームディレクトリ（フォールバック）:
+~/Documents/TUGUMI/
+├── LOGS/
+├── MEMORY/
+├── TOOLS/
+├── OUTPUT/
+└── SCRAPE_OUTPUT/
 ```
 
 ---
@@ -169,19 +201,20 @@ TUGUMI-AUTO/
         │ TugumiMind  │  (メイン思考エンジン)
         └──────┬──────┘
                │
-      ┌────────┼────────┐
-      │        │        │
-  ┌───▼──┐ ┌──▼───┐ ┌──▼────┐
-  │ LLM  │ │ Tools│ │ Logger │
-  │Client│ │Kit   │ │Memory  │
-  └───┬──┘ └──┬───┘ └──┬────┘
-      │       │        │
-      └───┬───┴────┬───┘
+      ┌────────┼────────────┐
+      │        │            │
+  ┌───▼──┐ ┌──▼───┐ ┌──────▼─────┐
+  │ LLM  │ │ Tools│ │ Scraper    │
+  │Client│ │Kit   │ │ Logger     │
+  └───┬──┘ └──┬───┘ │ Memory     │
+      │       │     └──────┬─────┘
+      └───┬───┴────┬───────┘
           │        │
     ┌─────▼──┐ ┌───▼──────┐
     │llama   │ │ Storage  │
-    │.cpp    │ │(Docs)    │
-    └────────┘ └──────────┘
+    │.cpp    │ │(Android/ │
+    └────────┘ │ Documents)
+               └──────────┘
 ```
 
 ### 処理フロー
@@ -202,6 +235,7 @@ TUGUMI-AUTO/
 4. Execution (実行)
    - 各ステップを順序実行
    - リアルタイム監視
+   - Webスクレイピング実行
    
 5. Verification & Self-Correction (検証・修正)
    - 実行結果を評価
@@ -209,6 +243,7 @@ TUGUMI-AUTO/
    
 6. Logging & Memory (ログ・メモリ保存)
    - すべての履歴を記録
+   - スクレイピング結果を保存
    - 学習データとして保存
 ```
 
@@ -224,7 +259,7 @@ TUGUMI-AUTO/
 from tugumi_tools import ToolManager
 from pathlib import Path
 
-tool_manager = ToolManager(Path.home() / "Documents" / "TUGUMI_TOOLS")
+tool_manager = ToolManager(Path.home() / "Documents" / "TUGUMI" / "TOOLS")
 
 # ツールを生成して登録
 tool_manager.create_and_load_tool(
@@ -239,7 +274,7 @@ tool_manager.create_and_load_tool(
 
 #### 方法2: 手動作成
 
-`~/Documents/TUGUMI_TOOLS/` に以下の構成でPythonファイルを作成:
+`~/Documents/TUGUMI/TOOLS/` に以下の構成でPythonファイルを作成:
 
 ```python
 def register_tools(registry):
@@ -285,7 +320,7 @@ tool_manager.create_tool_pack("my_pack", tools_list)
 ### タスク受け取り例
 
 ```
-User: "Pythonで画像処理ライブラリを調べて、インストール可能な状態にしてくだ���い"
+User: "Pythonで画像処理ライブラリを調べて、インストール可能な状態にしてください"
 
 TUGUMI思考:
 1. タスク分析:
@@ -316,29 +351,35 @@ TUGUMI思考:
 
 ### ログ出力
 
-すべてのアクションが `~/Documents/TUGUMI_LOGS/` に自動保存されます。
+すべてのアクションが自動的に保存されます:
+- **Android**: `/storage/emulated/0/AgentDesk/LOGS/`
+- **その他**: `~/Documents/TUGUMI/LOGS/`
 
 ```
-TUGUMI_LOGS/
-├── tugumi_20240601_120000.log
-├── tugumi_20240601_120500.log
+LOGS/
+├── tugumi_20260602_120000.log
+├── tugumi_20260602_120500.log
 └── ...
 ```
 
 ### ログ形式
 
 ```
-2024-06-01T12:00:00.123456 | INFO [TASK_001_1717239600] | Starting task: research Python libraries
-2024-06-01T12:00:01.234567 | INFO [SEARCH] | Web search: latest Python data processing libraries
-2024-06-01T12:00:02.345678 | DEBUG [LLM] | Sending inference request: Analyze search results...
-2024-06-01T12:00:15.456789 | INFO [LLM] | Inference completed in 13.1s
-2024-06-01T12:00:16.567890 | INFO [EXEC] | Executing command: pip install pandas numpy
-2024-06-01T12:00:30.678901 | INFO [EXEC] | Command completed with code 0
+2026-06-02T12:00:00.123456 | INFO [TASK_001_1717239600] | Starting task: research Python libraries
+2026-06-02T12:00:01.234567 | INFO [SEARCH] | Web search: latest Python data processing libraries
+2026-06-02T12:00:02.345678 | DEBUG [LLM] | Sending inference request: Analyze search results...
+2026-06-02T12:00:15.456789 | INFO [LLM] | Inference completed in 13.1s
+2026-06-02T12:00:16.567890 | INFO [EXEC] | Executing command: pip install pandas numpy
+2026-06-02T12:00:30.678901 | INFO [EXEC] | Command completed with code 0
+2026-06-02T12:00:31.789012 | INFO [SCRAPE] | Fetching: https://example.com
+2026-06-02T12:00:35.890123 | INFO [SCRAPE] | File saved: /storage/emulated/0/AgentDesk/SCRAPE_OUTPUT/scrape_example_com.txt
 ```
 
 ### メモリシステム
 
-タスク実行結果は `~/Documents/TUGUMI_MEMORY/` に JSON形式で保存:
+タスク実行結果は JSON形式で保存:
+- **Android**: `/storage/emulated/0/AgentDesk/MEMORY/`
+- **その他**: `~/Documents/TUGUMI/MEMORY/`
 
 ```json
 {
@@ -427,6 +468,14 @@ curl http://0.0.0.0:8080/slots
 ./llama-server -m ~/models/model.gguf -c 1024 --port 8080
 ```
 
+### Webスクレイピング失敗
+
+```
+[ERROR] Fetching failed: ...
+```
+
+自動リトライ機能が動作します（最大3回）。タイムアウトは30秒です。
+
 ---
 
 ## 📝 API リファレンス
@@ -434,6 +483,8 @@ curl http://0.0.0.0:8080/slots
 ### TugumiMind クラス
 
 ```python
+from tugumi_agent import TugumiMind
+
 agent = TugumiMind()
 
 # タスク実行
@@ -454,7 +505,7 @@ memory = agent.logger.load_memory("key")
 from tugumi_tools import ToolManager
 from pathlib import Path
 
-tool_manager = ToolManager(Path.home() / "Documents" / "TUGUMI_TOOLS")
+tool_manager = ToolManager(Path.home() / "Documents" / "TUGUMI" / "TOOLS")
 
 # ツール作成
 tool_manager.create_and_load_tool("tool_name", "description", "implementation")
@@ -464,6 +515,24 @@ result = tool_manager.call_tool("tool_name", arg1, arg2)
 
 # 利用可能なツール確認
 tools = tool_manager.get_available_tools()
+```
+
+### TugumiWebScraper クラス
+
+```python
+from tugumi_agent import TugumiWebScraper, TugumiLogger
+
+logger = TugumiLogger()
+scraper = TugumiWebScraper(logger)
+
+# URLをスクレイピング
+result = scraper.scrape_and_summarize("https://example.com", save_output=True)
+
+# テキスト抽出
+text = scraper.extract_text_from_html(html_content)
+
+# ファイル保存
+file_path = scraper.save_to_file("content", "filename")
 ```
 
 ---
@@ -479,7 +548,7 @@ TUGUMI> task
 > ファイルパスは ~/data.csv です。
 ```
 
-### 例2: ウェブスクレイピング
+### 例2: Webスクレイピング
 
 ```
 TUGUMI> task 
@@ -496,6 +565,16 @@ TUGUMI> task
 > テストレポートをJSON形式で保存してください。
 > スクリプトパス: ~/my_script.py
 ```
+
+### 例4: 複数URLのスクレイピング
+
+```
+TUGUMI> scrape https://news.example.com/article1
+TUGUMI> scrape https://news.example.com/article2
+TUGUMI> scrape https://docs.example.com
+```
+
+結果は `/storage/emulated/0/AgentDesk/SCRAPE_OUTPUT/` に保存されます。
 
 ---
 
@@ -520,10 +599,27 @@ MIT License
 
 ## ✨ 特記事項
 
-TUGUMI は、完全に自律的に動作する設計です。エラーが発生しても、ユーザーの入力を待つことなく、自ら考え、調査し、必要なツールを整え、タスクを完遂します。
+TUGUMI は、完全に自律的に動作する設計です。エラーが発生しても、ユーザーの入力を待つことなく、自ら考え、調査し、必要なツールを整え、実行します。
 
 これは、従来のAIアシスタントとは異なり、**人間の承認に依存しない自律型エージェント**として機能します。
 
+### 完全エラーハンドリング
+- ✅ LLM未起動でもフォールバック動作
+- ✅ ネットワーク失敗時も自動リトライ（最大3回）
+- ✅ ファイル保存失敗時も処理継続
+- ✅ JSON パース失敗時もデフォルト値返却
+- ✅ すべてのエラーが詳細にログに記録
+
+### 自動復旧メカニズム
+1. **エラー検出**: 自動的にエラーを検出
+2. **分析**: LLMでエラーの原因を分析
+3. **代替案生成**: 別の実行方法を生成
+4. **再試行**: 修正版で再実行
+5. **検証**: 結果を検証して確認
+6. **学習**: エラーと対応方法をメモリに記録
+
 ---
 
-**最後更新**: 2024-06-01
+**最後更新**: 2026-06-02
+
+**バージョン**: 1.0.0 (完全機能版)
